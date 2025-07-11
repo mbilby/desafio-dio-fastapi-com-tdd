@@ -1,9 +1,12 @@
-from pydantic import UUID4, BaseModel, Field
-from datetime import datetime
-import uuid
+from pydantic import BaseModel
+from bson import Decimal128
 
 
 class BaseSchemaMixin(BaseModel):
-    id: UUID4 = Field(default_factory=uuid.uuid4)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    model_config = {
+        "from_attributes": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": {
+            Decimal128: lambda d: str(d),
+        },
+    }

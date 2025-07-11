@@ -6,3 +6,6 @@ precommit-install:
 
 test:
 	@pytest
+
+specific-test:
+	@pytest -s -rx -k $(K) --pdb ./tests/

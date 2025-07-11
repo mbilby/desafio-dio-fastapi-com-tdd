@@ -1,10 +1,26 @@
+# services:
+#   db:
+#     image: 'zcube/bitnami-compat-mongodb'
+#     ports:
+#       - 27017:27017
+#     restart: "on-failure"
+#     environment:
+#       - MONGODB_ADVERTISED_HOSTNAME=localhost
+#       - MONGODB_ROOT_PASSWORD=mongodb
+#       - MONGODB_DATABASE=store
+      #- ALLOW_EMPTY_PASSWORD=yes
+
+
+version: '3.8'
 services:
-  db:
-    image: 'bitnami/mongodb:latest'
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb # Opcional, mas útil
     ports:
-      - 27017:27017
+      - "27017:27017"
     restart: "on-failure"
     environment:
-      - MONGODB_REPLICA_SET_MODE=primary
-      - MONGODB_REPLICA_SET_HOSTNAME=localhost
-      - ALLOW_EMPTY_PASSWORD=yes
+      MONGO_INITDB_ROOT_USERNAME: root # ESTE NOME DE USUÁRIO
+      MONGO_INITDB_ROOT_PASSWORD: mongodb # ESTA SENHA
+    # volumes:
+    #   - ./data/db:/data/db # Se você quiser persistir os dados
