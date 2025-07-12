@@ -1,50 +1,63 @@
+import logging
 import pytest
-import pytest_asyncio
+from time import time
+from contextlib import asynccontextmanager
 from store.app import app
 from motor.motor_asyncio import AsyncIOMotorClient
 from store.core.config import settings
-from dotenv import load_dotenv
 from store.schemas.product import ProductIn
-from store.factory import product_data
+from store.models.product import ProductModel
+from store.usecases.product import ProductUsecases
+from store.factory import product_data, products_data
+from fastapi.testclient import TestClient
 from uuid import UUID
 
-load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-# @pytest_asyncio.fixture(scope="session")
-# def event_loop():
-#     if sys.platform.startswith("win"):
-#         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-#     loop = asyncio.new_event_loop()
-#     yield loop
-
-
-# Cria cliente MongoDB antes de cada teste e fecha depois
-@pytest_asyncio.fixture(scope="function")
-async def mongo_client():
+@asynccontextmanager
+async def db_context():
     client = AsyncIOMotorClient(settings.DATABASE_URL)
-    yield client
-    client.close()
+    db = client.get_default_database()
+    try:
+        yield db, client
+    finally:
+        collections = await db.list_collection_names()
+        for col in collections:
+            if not col.startswith("system"):
+                await db[col].delete_many({})
+        client.close()
 
 
-# Limpa as coleções antes de cada teste (exceto as system.*)
-@pytest_asyncio.fixture(autouse=True, scope="function")
-async def clear_collections(mongo_client):
-    db = mongo_client.get_default_database()
-    collections = await db.list_collection_names()
-    for col in collections:
-        if not col.startswith("system"):
-            await db[col].delete_many({})
-    yield  # Não precisa teardown após o teste
+@pytest.fixture(scope="function", autouse=True)
+async def db_and_client():
+    """Fixture global para fornecer DB e client e limpar tudo após cada teste."""
+    async with db_context() as (db, client):
+        yield db, client
+
+
+@pytest.fixture(autouse=True)
+def log_test_time(request):
+    """Mede o tempo de execução de cada teste."""
+    start = time()
+    yield
+    duration = time() - start
+    logger.info(f"Test '{request.node.name}' completed in {duration:.4f} seconds.")
+
+
+# Exemplo de mock
+@pytest.fixture
+def mock_product_usecase(db_and_client):
+    db, client = db_and_client
+    return ProductUsecases(client=client)
 
 
 # Fixture para o cliente de teste HTTP
-@pytest_asyncio.fixture(scope="function")
-async def client():
-    from httpx import AsyncClient
-
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
+@pytest.fixture(scope="function")
+def client():
+    with TestClient(app=app, base_url="http://test") as test_client:
+        yield test_client
 
 
 # Fixture para a URL base dos produtos
@@ -61,4 +74,16 @@ def product_id() -> UUID:
 @pytest.fixture
 def product_in(product_id) -> ProductIn:
     retorno = ProductIn(**product_data(), id=product_id)
+    return retorno
+
+
+@pytest.fixture
+def product_model() -> ProductModel:
+    retorno = ProductModel(**product_data())
+    return retorno
+
+
+@pytest.fixture
+def products_model() -> list[ProductModel]:
+    retorno = [ProductModel(**product) for product in products_data()]
     return retorno
