@@ -1,5 +1,5 @@
 from bson import Decimal128
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClient
 import pymongo
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate, ProductUpdateOut
 from store.models.product import ProductModel
@@ -10,16 +10,14 @@ from store.utils.utils import convert_bson_types
 
 
 class ProductUsecases:
-    def __init__(self, client: AsyncIOMotorClient) -> None:
-        self.client: AsyncIOMotorClient = client
-        self.database: AsyncIOMotorDatabase = client.get_default_database()
-        self.collection = self.database.get_collection("products")
+    def __init__(self, db: AsyncIOMotorClient) -> None:
+        self.collection = db["products"]
 
     async def create(self, body: ProductIn) -> ProductOut:
+        if self.collection is None:
+            raise RuntimeError("Collection is not initialized.")
         product_model = ProductModel(**body.model_dump())
-
         await self.collection.insert_one(product_model.model_dump())
-
         return ProductOut(**product_model.model_dump())
 
     async def create_products(self, body: list[ProductIn]) -> list[ProductOut]:
@@ -38,12 +36,10 @@ class ProductUsecases:
     async def get(self, id: UUID) -> ProductOut:
         if self.collection is None:
             raise RuntimeError("Collection is not initialized.")
-        result = await self.collection.find_one({"id": id})
-
-        if not result:
-            raise NotFoundException(message=f"Product not found with filter: {id}")
-
-        return ProductOut(**result)
+            result = await self.collection.find_one({"id": id})
+            if result is None:
+                raise NotFoundException(message=f"Product not found with filter: {id}")
+            return ProductOut(**result)
 
     async def query(self) -> list[ProductOut]:
         products = []

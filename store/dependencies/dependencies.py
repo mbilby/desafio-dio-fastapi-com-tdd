@@ -1,11 +1,7 @@
-from store.db.mongo import db_client
 from store.usecases.product import ProductUsecases
+from fastapi import Request
 
 
-async def get_product_usecase() -> ProductUsecases:
-    """
-    Função de dependência que fornece uma instância de ProductUsecases.
-    """
-    # db_client é o seu singleton MongoClient, que já tem o cliente Motor inicializado.
-    # get_client() retorna o AsyncIOMotorClient.
-    return ProductUsecases(client=db_client.get())
+async def get_product_usecase(request: Request) -> ProductUsecases:
+    db = request.app.state.db
+    return ProductUsecases(db)

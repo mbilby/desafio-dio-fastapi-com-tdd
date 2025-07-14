@@ -24,3 +24,13 @@ def convert_bson_types(doc):
         if isinstance(v, Decimal128):
             doc_copy[k] = Decimal(str(v))
     return doc_copy
+
+
+def to_decimal128(obj):
+    if isinstance(obj, dict):
+        return {k: to_decimal128(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_decimal128(v) for v in obj]
+    elif isinstance(obj, Decimal):
+        return Decimal128(str(obj))
+    return obj
