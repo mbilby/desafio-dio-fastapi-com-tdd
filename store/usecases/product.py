@@ -36,10 +36,10 @@ class ProductUsecases:
     async def get(self, id: UUID) -> ProductOut:
         if self.collection is None:
             raise RuntimeError("Collection is not initialized.")
-            result = await self.collection.find_one({"id": id})
-            if result is None:
-                raise NotFoundException(message=f"Product not found with filter: {id}")
-            return ProductOut(**result)
+        result = await self.collection.find_one({"id": id})
+        if result is None:
+            raise NotFoundException(message=f"Product not found with filter: {id}")
+        return ProductOut(**result)
 
     async def query(self) -> list[ProductOut]:
         products = []

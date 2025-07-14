@@ -25,7 +25,7 @@ async def get(
     return result
 
 
-@router.get(path="/", status_code=status.HTTP_200_OK, response_model=ProductOut)
+@router.get(path="/", status_code=status.HTTP_200_OK, response_model=list[ProductOut])
 async def query(
     usecase: ProductUsecases = Depends(get_product_usecase),
 ) -> list[ProductOut]:

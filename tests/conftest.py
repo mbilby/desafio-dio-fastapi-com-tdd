@@ -26,10 +26,21 @@ def log_test_time(request):
 
 
 @pytest.fixture
-def db_connection():
+async def db_connection():
     client = AsyncIOMotorClient(settings.DATABASE_URL)
     db = client.store
-    return db
+    yield db
+    client.close()
+
+
+@pytest.fixture(autouse=True, scope="function")
+async def clear_collections(db_connection):
+    yield
+    collections = await db_connection.list_collection_names()
+    for collection in collections:
+        if not collection.startswith("system"):
+            logger.info(f"Clearing collection: {collection}")
+            await db_connection[collection].delete_many({})
 
 
 @pytest.fixture
