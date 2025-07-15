@@ -1,17 +1,3 @@
-# services:
-#   db:
-#     image: 'zcube/bitnami-compat-mongodb'
-#     ports:
-#       - 27017:27017
-#     restart: "on-failure"
-#     environment:
-#       - MONGODB_ADVERTISED_HOSTNAME=localhost
-#       - MONGODB_ROOT_PASSWORD=mongodb
-#       - MONGODB_DATABASE=store
-      #- ALLOW_EMPTY_PASSWORD=yes
-
-
-version: '3.8'
 services:
   mongodb:
     image: mongo:latest
@@ -22,5 +8,21 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root # ESTE NOME DE USUÁRIO
       MONGO_INITDB_ROOT_PASSWORD: mongodb # ESTA SENHA
-    # volumes:
-    #   - ./data/db:/data/db # Se você quiser persistir os dados
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh 'mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/store?authSource=admin --quiet'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    container_name: python-com-tdd
+    ports:
+      - "8000:8000"
+    depends_on:
+      - "mongodb"
+    env_file:
+      - .env.local
+volumes:
+  mongodb_data:
