@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
    exit 1
  fi
 
-# echo "Tests passed! Starting application..."
+echo "Tests passed! Starting application..."
 
 # Inicia a aplicação Uvicorn
 # Certifique-se de que 'store.app:app' é o caminho correto para sua aplicação
